@@ -1,0 +1,277 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  phone     String?
+  userType  UserType
+  pushToken String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ownedProperties       Property[] @relation("PropertyOwner")
+  tenantRelationships   RentalRelationship[] @relation("Tenant")
+  landlordRelationships RentalRelationship[] @relation("Landlord")
+  sentMessages          Message[] @relation("SentMessages")
+  receivedMessages      Message[] @relation("ReceivedMessages")
+  proposedChanges       PaymentDateChangeRequest[] @relation("ProposedChanges")
+  respondedChanges      PaymentDateChangeRequest[] @relation("RespondedChanges")
+  endRequests           EndRequest[]
+  notifications         Notification[]
+  notificationSettings  NotificationSettings?
+
+  @@map("users")
+}
+
+model Property {
+  id               String   @id @default(cuid())
+  title            String
+  description      String?
+  propertyType     PropertyType?     @default(APARTMENT)
+  furnishingStatus FurnishingStatus? @default(UNFURNISHED)
+  monthlyRent      Int
+  bedrooms         Int
+  bathrooms        Int
+  area             Int?
+  address          String
+  photos           String[]         @default([]) // Array of photo URLs
+  paymentDueDay    Int?     // Day of month when rent is due (1-31), null until set
+  gracePeriodDays  Int      @default(7) // Grace period in days after due date
+  isPublic         Boolean  @default(false) // Whether property is visible in marketplace
+  availabilityStatus String? // AVAILABLE, ENDING_SOON, or AVAILABLE_SOON
+  availabilityDays Int?     // Days until available (for ENDING_SOON)
+  ownerId          String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  owner         User @relation("PropertyOwner", fields: [ownerId], references: [id])
+  rentals       RentalRelationship[]
+  messages      Message[]
+  changeRequests PaymentDateChangeRequest[]
+
+  @@map("properties")
+}
+
+model RentalRelationship {
+  id          String   @id @default(cuid())
+  propertyId  String
+  tenantId    String
+  landlordId  String
+  startDate   DateTime
+  endDate     DateTime?
+  monthlyRent Int
+  status      RentalStatus @default(ACTIVE)
+  inviteCode  String?      @unique
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  property Property @relation(fields: [propertyId], references: [id])
+  tenant   User     @relation("Tenant", fields: [tenantId], references: [id])
+  landlord User     @relation("Landlord", fields: [landlordId], references: [id])
+  payments Payment[]
+  endRequest EndRequest?
+
+  @@map("rental_relationships")
+}
+
+enum UserType {
+  LANDLORD
+  TENANT
+}
+
+enum RentalStatus {
+  PENDING
+  ACTIVE
+  ENDING      // Has an end request pending
+  ENDED       // Relationship ended
+  EXPIRED     // Keeping for backwards compatibility
+  TERMINATED  // Keeping for backwards compatibility
+}
+
+enum PaymentStatus {
+  PENDING
+  VERIFICATION
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+model Message {
+  id          String   @id @default(cuid())
+  content     String
+  senderId    String
+  receiverId  String
+  propertyId  String
+  read        Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  sender   User     @relation("SentMessages", fields: [senderId], references: [id])
+  receiver User     @relation("ReceivedMessages", fields: [receiverId], references: [id])
+  property Property @relation(fields: [propertyId], references: [id])
+
+  @@map("messages")
+}
+
+model PaymentDateChangeRequest {
+  id            String                  @id @default(cuid())
+  propertyId    String
+  property      Property                @relation(fields: [propertyId], references: [id])
+  currentDate   Int                     // Current payment due day
+  proposedDate  Int                     // Proposed new payment due day
+  proposedById  String
+  proposedBy    User                    @relation("ProposedChanges", fields: [proposedById], references: [id])
+  respondedById String?
+  respondedBy   User?                   @relation("RespondedChanges", fields: [respondedById], references: [id])
+  status        ChangeRequestStatus     @default(PENDING)
+  reason        String?                 // Optional reason for the change
+  responseNote  String?                 // Optional note from tenant when responding
+  responseDate  DateTime?
+  effectiveFrom DateTime                // When the change will take effect
+  createdAt     DateTime                @default(now())
+  expiresAt     DateTime                // Auto-reject after this time
+  updatedAt     DateTime                @updatedAt
+
+  @@map("payment_date_change_requests")
+}
+
+enum ChangeRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  EXPIRED
+
+  @@map("change_request_status")
+}
+
+model Payment {
+  id          String        @id @default(cuid())
+  amount      Int
+  dueDate     DateTime
+  paidDate    DateTime?
+  status      PaymentStatus @default(PENDING)
+  description String?
+  method      String?       // e.g., "Bank Transfer", "Cash", "Card"
+  reference   String?       // Payment reference/receipt number
+  proofImage  String?       // Base64 encoded image or file path
+  rentalId    String
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  rental RentalRelationship @relation(fields: [rentalId], references: [id])
+
+  @@map("payments")
+}
+
+model EndRequest {
+  id              String   @id @default(cuid())
+  rentalId        String   @unique
+  rental          RentalRelationship @relation(fields: [rentalId], references: [id])
+  
+  requestedById   String
+  requestedBy     User     @relation(fields: [requestedById], references: [id])
+  requestedAt     DateTime @default(now())
+  reason          String?  // Optional friendly message
+  
+  status          EndRequestStatus @default(PENDING)
+  respondedAt     DateTime?
+  
+  // Auto-accept after 7 days
+  autoAcceptAt    DateTime
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("end_requests")
+}
+
+enum EndRequestStatus {
+  PENDING
+  ACCEPTED
+  AUTO_ACCEPTED
+  CANCELLED
+
+  @@map("end_request_status")
+}
+
+model Notification {
+  id        String            @id @default(cuid())
+  userId    String
+  user      User              @relation(fields: [userId], references: [id])
+  type      NotificationType
+  title     String
+  body      String
+  data      Json?             // Additional data for navigation/context
+  read      Boolean           @default(false)
+  sentAt    DateTime?         // When push notification was sent
+  createdAt DateTime          @default(now())
+
+  @@map("notifications")
+}
+
+enum NotificationType {
+  PAYMENT_REMINDER
+  PAYMENT_OVERDUE
+  PAYMENT_APPROVED
+  PAYMENT_REJECTED
+  PAYMENT_VERIFICATION_NEEDED
+  PAYMENT_DATE_CHANGE_REQUEST
+  PAYMENT_DATE_CHANGE_APPROVED
+  PAYMENT_DATE_CHANGE_REJECTED
+  NEW_MESSAGE
+  END_RENTAL_REQUEST
+  END_RENTAL_AUTO_ACCEPT_WARNING
+  NEW_TENANT_JOINED
+  INVITE_CODE_GENERATED
+
+  @@map("notification_type")
+}
+
+model NotificationSettings {
+  id                          String  @id @default(cuid())
+  userId                      String  @unique
+  user                        User    @relation(fields: [userId], references: [id])
+  
+  // Push notification preferences
+  paymentReminders            Boolean @default(true)
+  paymentUpdates              Boolean @default(true)
+  messages                    Boolean @default(true)
+  endRentalNotifications      Boolean @default(true)
+  tenantUpdates               Boolean @default(true)  // For landlords
+  paymentDateChangeRequests   Boolean @default(true)
+  
+  // Timing preferences
+  reminderDaysBefore          Int     @default(3)     // Days before due date
+  
+  createdAt                   DateTime @default(now())
+  updatedAt                   DateTime @updatedAt
+
+  @@map("notification_settings")
+}
+
+enum PropertyType {
+  APARTMENT
+  VILLA
+  STUDIO
+  TOWNHOUSE
+  PENTHOUSE
+  
+  @@map("property_type")
+}
+
+enum FurnishingStatus {
+  FURNISHED
+  SEMI_FURNISHED
+  UNFURNISHED
+  
+  @@map("furnishing_status")
+}
