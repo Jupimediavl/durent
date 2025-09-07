@@ -1,8 +1,20 @@
 import Stripe from 'stripe';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2025-08-27.basil',
-});
+// Lazy initialization to avoid crashes if STRIPE_SECRET_KEY is not set
+let stripe: Stripe | null = null;
+
+const getStripe = (): Stripe => {
+  if (!stripe) {
+    const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+    if (!stripeSecretKey) {
+      throw new Error('STRIPE_SECRET_KEY is not configured');
+    }
+    stripe = new Stripe(stripeSecretKey, {
+      apiVersion: '2025-08-27.basil',
+    });
+  }
+  return stripe;
+};
 
 export interface PaymentIntentData {
   amount: number; // in fils (AED * 100)
@@ -19,7 +31,7 @@ export const stripeService = {
   // Create a payment intent for client
   createPaymentIntent: async (data: PaymentIntentData) => {
     try {
-      const paymentIntent = await stripe.paymentIntents.create({
+      const paymentIntent = await getStripe().paymentIntents.create({
         amount: data.amount,
         currency: data.currency,
         metadata: data.metadata,
@@ -43,7 +55,7 @@ export const stripeService = {
   // Confirm payment completion
   confirmPayment: async (paymentIntentId: string) => {
     try {
-      const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+      const paymentIntent = await getStripe().paymentIntents.retrieve(paymentIntentId);
       
       if (paymentIntent.status === 'succeeded') {
         return {
@@ -73,7 +85,7 @@ export const stripeService = {
   handleWebhook: async (payload: Buffer, signature: string) => {
     try {
       const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || '';
-      const event = stripe.webhooks.constructEvent(
+      const event = getStripe().webhooks.constructEvent(
         payload,
         signature,
         webhookSecret
