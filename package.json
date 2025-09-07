@@ -1,13 +1,45 @@
 {
-  "name": "durent-monorepo",
+  "name": "backend",
   "version": "1.0.0",
-  "private": true,
+  "description": "",
+  "main": "index.js",
   "scripts": {
-    "install": "cd backend && npm install",
-    "build": "cd backend && npx prisma generate && npm run build",
-    "start": "cd backend && npx prisma migrate deploy && npm start"
+    "start": "node dist/server.js",
+    "dev": "nodemon src/server.ts",
+    "build": "tsc",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "auto-accept": "ts-node src/scripts/autoAcceptEndRequests.ts",
+    "auto-payments": "ts-node src/scripts/autoGeneratePayments.ts",
+    "test-notification": "ts-node src/scripts/testNotification.ts"
   },
-  "engines": {
-    "node": ">=18.0.0"
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@prisma/client": "^6.15.0",
+    "@supabase/supabase-js": "^2.56.1",
+    "@types/multer": "^2.0.0",
+    "@types/stripe": "^8.0.416",
+    "bcryptjs": "^3.0.2",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.1",
+    "expo-image-picker": "~16.1.4",
+    "expo-server-sdk": "^4.0.0",
+    "express": "^5.1.0",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^2.0.2",
+    "prisma": "^6.15.0",
+    "stripe": "^18.5.0"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^24.3.0",
+    "nodemon": "^3.1.10",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.2"
   }
 }
