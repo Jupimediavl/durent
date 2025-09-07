@@ -1,0 +1,14 @@
+{
+  "name": "durent-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "install": "cd backend && npm install",
+    "build": "cd backend && npm run build",
+    "start": "cd backend && npm start",
+    "postinstall": "cd backend && npx prisma generate"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
