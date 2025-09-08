@@ -9,6 +9,7 @@ import { proposePaymentDateChange, getPendingChangeRequests, respondToChangeRequ
 import { upload, uploadPropertyPhotos } from '../controllers/uploadController';
 import { createIssueReport, getTenantIssues, getLandlordIssues, updateIssueStatus, getIssueDetails, getLandlordIssuesCount, getTenantIssuesCount } from '../controllers/issueController';
 import { getUserNotificationZones, toggleZoneNotification, checkZoneNotificationStatus, getUserNotificationSettings, updateUserNotificationSettings } from '../controllers/zoneNotificationController';
+import { triggerZoneDigestManually } from '../scripts/zoneDigestCron';
 import { authenticate } from '../middleware/auth';
 import endRentalRoutes from './endRentalRoutes';
 import notificationRoutes from './notificationRoutes';
@@ -106,6 +107,18 @@ router.post('/zone-notifications/preferences', authenticate, toggleZoneNotificat
 router.get('/zone-notifications/preferences/:zoneName', authenticate, checkZoneNotificationStatus);
 router.get('/zone-notifications/settings', authenticate, getUserNotificationSettings);
 router.put('/zone-notifications/settings', authenticate, updateUserNotificationSettings);
+
+// Manual trigger for zone digest (testing purposes)
+router.post('/zone-notifications/trigger-digest', async (req: any, res: any) => {
+  try {
+    console.log('🧪 Manual zone digest trigger requested');
+    await triggerZoneDigestManually();
+    res.json({ success: true, message: 'Zone digest triggered successfully' });
+  } catch (error) {
+    console.error('❌ Manual zone digest trigger failed:', error);
+    res.status(500).json({ error: 'Failed to trigger zone digest' });
+  }
+});
 
 // DEPLOYMENT TEST - Remove after verification
 router.get('/deployment-test', (req: any, res: any) => {

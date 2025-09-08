@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import crypto from 'crypto';
 import { AuthRequest } from '../middleware/auth';
 import { prisma } from '../lib/prisma';
+import { zoneDigestService } from '../services/zoneDigestService';
 
 export const createProperty = async (req: AuthRequest, res: Response) => {
   try {
@@ -122,6 +123,19 @@ export const createProperty = async (req: AuthRequest, res: Response) => {
         emergencyContact: emergencyContact || null,
       },
     });
+
+    // Add to zone notifications if property is available
+    if (property.isPublic && property.availabilityStatus === 'AVAILABLE' && address) {
+      try {
+        // Convert address to zone name (normalized for consistency)
+        const zoneName = address.toLowerCase().replace(/\s+/g, '-');
+        await zoneDigestService.addPropertyToPendingNotifications(property.id, zoneName);
+        console.log(`📝 Added property ${property.id} to pending zone notifications for ${zoneName}`);
+      } catch (notificationError) {
+        console.error('Failed to add property to zone notifications:', notificationError);
+        // Don't fail the entire property creation if notification fails
+      }
+    }
 
     res.status(201).json({
       message: 'Property created successfully',
@@ -663,6 +677,22 @@ export const updatePropertyAvailability = async (req: AuthRequest, res: Response
     });
 
     console.log('✅ Property availability updated:', updatedProperty.id);
+
+    // Check if property became available for zone notifications
+    const wasAvailable = property.isPublic && property.availabilityStatus === 'AVAILABLE';
+    const isNowAvailable = updatedProperty.isPublic && updatedProperty.availabilityStatus === 'AVAILABLE';
+    
+    if (!wasAvailable && isNowAvailable && updatedProperty.address) {
+      try {
+        // Property just became available, add to pending notifications
+        const zoneName = updatedProperty.address.toLowerCase().replace(/\s+/g, '-');
+        await zoneDigestService.addPropertyToPendingNotifications(updatedProperty.id, zoneName);
+        console.log(`📝 Property ${updatedProperty.id} became available - added to pending zone notifications for ${zoneName}`);
+      } catch (notificationError) {
+        console.error('Failed to add property to zone notifications:', notificationError);
+        // Don't fail the entire update if notification fails
+      }
+    }
 
     res.json({
       message: 'Property availability updated successfully',

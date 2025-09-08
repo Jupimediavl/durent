@@ -3,6 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
 import routes from './routes';
+import { startZoneDigestCron } from './scripts/zoneDigestCron';
 
 dotenv.config();
 
@@ -47,6 +48,9 @@ const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`🔗 Health check: http://localhost:${PORT}/health`);
   console.log(`📱 Mobile access: http://192.168.1.135:${PORT}/health`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV}`);
+  
+  // Start zone digest cron job
+  startZoneDigestCron();
 });
 
 // Graceful shutdown for Railway
