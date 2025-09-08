@@ -129,6 +129,23 @@ router.get('/deployment-test', (req: any, res: any) => {
   res.json({ deployed: true, timestamp: new Date().toISOString(), version: 'zone-notifications-deployment-test' });
 });
 
+// Emergency manual trigger - inline implementation
+router.post('/zone-notifications/emergency-trigger', async (req: any, res: any) => {
+  try {
+    console.log('🚨 Emergency zone digest trigger requested');
+    
+    // Import directly here to avoid module issues
+    const { zoneDigestService } = await import('../services/zoneDigestService');
+    await zoneDigestService.sendDailyDigest();
+    
+    console.log('✅ Emergency trigger completed');
+    res.json({ success: true, message: 'Emergency zone digest completed' });
+  } catch (error) {
+    console.error('❌ Emergency trigger failed:', error);
+    res.status(500).json({ error: 'Emergency trigger failed', details: error.message });
+  }
+});
+
 // Debug endpoint
 router.get('/debug/user', authenticate, async (req: any, res) => {
   const { PrismaClient } = require('@prisma/client');
