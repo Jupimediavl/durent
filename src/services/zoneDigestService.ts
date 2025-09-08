@@ -92,15 +92,15 @@ export class ZoneDigestService {
       SELECT 
         u.id as user_id,
         u.name as user_name,
-        u.pushToken as user_push_token,
+        u."pushToken" as user_push_token,
         STRING_AGG(znp.zone_name, ',') as zones
       FROM users u
       INNER JOIN zone_notification_preferences znp ON u.id = znp.user_id
       INNER JOIN user_notification_settings uns ON u.id = uns.user_id
       WHERE uns.zone_notifications_enabled = true
-        AND u.pushToken IS NOT NULL
-        AND u.pushToken != ''
-      GROUP BY u.id, u.name, u.pushToken
+        AND u."pushToken" IS NOT NULL
+        AND u."pushToken" != ''
+      GROUP BY u.id, u.name, u."pushToken"
     `;
 
     return users.map(user => ({
