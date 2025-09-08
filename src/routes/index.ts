@@ -116,7 +116,7 @@ router.post('/zone-notifications/trigger-digest', async (req: any, res: any) => 
     await triggerZoneDigestManually();
     console.log('✅ triggerZoneDigestManually completed successfully');
     res.json({ success: true, message: 'Zone digest triggered successfully' });
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ Manual zone digest trigger failed:', error);
     console.error('❌ Error details:', error.message);
     console.error('❌ Error stack:', error.stack);
@@ -140,7 +140,7 @@ router.post('/zone-notifications/emergency-trigger', async (req: any, res: any) 
     
     console.log('✅ Emergency trigger completed');
     res.json({ success: true, message: 'Emergency zone digest completed' });
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ Emergency trigger failed:', error);
     res.status(500).json({ error: 'Emergency trigger failed', details: error.message });
   }
