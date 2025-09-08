@@ -196,7 +196,7 @@ export class ZoneDigestService {
     try {
       await NotificationService.createAndSendNotification(
         user.userId,
-        'NEW_MESSAGE', // Using existing type for now
+        'NEW_MESSAGE',
         title,
         body,
         {
