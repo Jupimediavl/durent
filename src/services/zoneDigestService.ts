@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { notificationService } from './notificationService';
+import { NotificationService } from './notificationService';
 
 const prisma = new PrismaClient();
 
@@ -194,7 +194,7 @@ export class ZoneDigestService {
       : `${propertyCount} new properties now available in ${zoneName}`;
 
     try {
-      await notificationService.sendPushNotification({
+      await NotificationService.sendPushNotification({
         to: user.userPushToken,
         title,
         body,
