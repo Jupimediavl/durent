@@ -13,7 +13,7 @@ interface UserZoneData {
 interface PropertyData {
   id: string;
   title: string;
-  location: string;
+  address: string;
   price: number;
   type: string;
   bedrooms: number;
@@ -162,18 +162,18 @@ export class ZoneDigestService {
     const properties = await prisma.$queryRaw<Array<{
       id: string;
       title: string;
-      location: string;
+      address: string;
       price: number;
       type: string;
       bedrooms: number;
       bathrooms: number;
       photos: string[];
     }>>`
-      SELECT id, title, location, price, type, bedrooms, bathrooms, photos 
+      SELECT id, title, address, "monthlyRent" as price, "propertyType" as type, bedrooms, bathrooms, photos 
       FROM properties 
       WHERE id = ANY(${propertyIds})
-        AND status = 'AVAILABLE'
-      ORDER BY createdAt DESC
+        AND ("availabilityStatus" = 'AVAILABLE' OR "isPublic" = true)
+      ORDER BY "createdAt" DESC
     `;
 
     return properties;
