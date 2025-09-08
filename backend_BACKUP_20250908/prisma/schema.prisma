@@ -1,0 +1,483 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                    String                     @id @default(cuid())
+  email                 String                     @unique
+  password              String
+  name                  String
+  phone                 String
+  userType              UserType
+  createdAt             DateTime                   @default(now())
+  updatedAt             DateTime                   @updatedAt
+  pushToken             String?
+  credits               Int                        @default(50)
+  subscriptionType      String                     @default("FREE") @db.VarChar(20)
+  endRequests           EndRequest[]
+  receivedMessages      Message[]                  @relation("ReceivedMessages")
+  sentMessages          Message[]                  @relation("SentMessages")
+  notificationSettings  NotificationSettings?
+  notifications         Notification[]
+  proposedChanges       PaymentDateChangeRequest[] @relation("ProposedChanges")
+  respondedChanges      PaymentDateChangeRequest[] @relation("RespondedChanges")
+  ownedProperties       Property[]                 @relation("PropertyOwner")
+  landlordRelationships RentalRelationship[]       @relation("Landlord")
+  tenantRelationships   RentalRelationship[]       @relation("Tenant")
+  reportedIssues        IssueReport[]              @relation("TenantIssues")
+  receivedIssues        IssueReport[]              @relation("LandlordIssues")
+  propertyViews         PropertyView[]
+  premiumActions        PremiumAction[]
+  paymentTransactions   PaymentTransaction[]
+  createdInvites        Invite[]              @relation("CreatedInvites")
+  usedInvites           Invite[]              @relation("UsedInvites")
+  zoneNotifications     ZoneNotificationPreference[]
+
+  @@map("users")
+}
+
+model Property {
+  id                 String                     @id @default(cuid())
+  title              String
+  description        String?
+  monthlyRent        Int
+  bedrooms           Int
+  bathrooms          Int
+  area               Int?
+  address            String
+  ownerId            String
+  createdAt          DateTime                   @default(now())
+  updatedAt          DateTime                   @updatedAt
+  paymentDueDay      Int?
+  gracePeriodDays    Int                        @default(7)
+  propertyType       PropertyType?              @default(APARTMENT)
+  furnishingStatus   FurnishingStatus?          @default(UNFURNISHED)
+  photos             String[]                   @default([])
+  isPublic           Boolean?                   @default(false)
+  availabilityStatus String?
+  availabilityDays   Int?
+  securityDeposit    Int?
+  commission         Int?                       @default(5)
+  dewaDeposit        Int?                       @default(2000)
+  paymentFrequency   Int?                       @default(12)
+  noticePeriod       Int?                       @default(30)
+  floorNumber        Int?
+  totalFloors        Int?
+  buildingAge        Int?
+  parkingSpaces      Int?                       @default(0)
+  balcony            Boolean?                   @default(false)
+  yearBuilt          Int?
+  acType             String?                    @default("SPLIT") @db.VarChar(20)
+  chillerType        String?                    @default("PAID") @db.VarChar(10)
+  internetIncluded   Boolean?                   @default(false)
+  dewaIncluded       Boolean?                   @default(false)
+  waterIncluded      Boolean?                   @default(false)
+  kitchenAppliances  Boolean?                   @default(false)
+  washingMachine     Boolean?                   @default(false)
+  swimmingPool       Boolean?                   @default(false)
+  gym                Boolean?                   @default(false)
+  security24         Boolean?                   @default(false)
+  maidRoom           Boolean?                   @default(false)
+  studyRoom          Boolean?                   @default(false)
+  petsAllowed        Boolean?                   @default(false)
+  smokingAllowed     Boolean?                   @default(false)
+  tenantType         String?                    @default("ANY") @db.VarChar(20)
+  minimumStay        Int?                       @default(12)
+  nationality        String?                    @db.VarChar(50)
+  gender             String?                    @db.VarChar(10)
+  reraPermit         String?                    @db.VarChar(50)
+  municipalityNo     String?                    @db.VarChar(50)
+  titleDeedNo        String?                    @db.VarChar(50)
+  landlordId         String?                    @db.VarChar(50)
+  viewType           String?                    @db.VarChar(30)
+  furnished          String?
+  nearbyPlaces       String?
+  buildingFacilities String?
+  maintenanceContact String?                    @db.VarChar(20)
+  emergencyContact   String?                    @db.VarChar(20)
+  messages           Message[]
+  changeRequests     PaymentDateChangeRequest[]
+  issues             IssueReport[]
+  owner              User                       @relation("PropertyOwner", fields: [ownerId], references: [id])
+  rentals            RentalRelationship[]
+  propertyViews      PropertyView[]
+  premiumActions     PremiumAction[]
+  paymentTransactions PaymentTransaction[]
+  invites            Invite[]
+
+  @@index([buildingAge], map: "idx_properties_building_age")
+  @@index([chillerType], map: "idx_properties_chiller_type")
+  @@index([parkingSpaces], map: "idx_properties_parking_spaces")
+  @@index([reraPermit], map: "idx_properties_rera_permit")
+  @@index([securityDeposit], map: "idx_properties_security_deposit")
+  @@index([tenantType], map: "idx_properties_tenant_type")
+  @@map("properties")
+}
+
+model RentalRelationship {
+  id              String       @id @default(cuid())
+  propertyId      String
+  tenantId        String
+  landlordId      String
+  startDate       DateTime
+  endDate         DateTime?
+  monthlyRent     Int
+  status          RentalStatus @default(ACTIVE)
+  inviteCode      String?      @unique
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  
+  // Contract Management Fields for Dubai Market
+  contractDuration    Int?            // Duration in months (12, 24, etc)
+  contractType        ContractType?   @default(FIXED)
+  autoRenewal         Boolean?        @default(false)
+  securityDeposit     Int?           // Security deposit amount
+  contractStartDate   DateTime?      // Actual contract start (might differ from relationship start)
+  contractEndDate     DateTime?      // Calculated contract end date
+  paymentsGenerated   Boolean?       @default(false) // Track if payments were auto-generated
+  endRequest  EndRequest?
+  payments    Payment[]
+  issues      IssueReport[]
+  landlord    User         @relation("Landlord", fields: [landlordId], references: [id])
+  property    Property     @relation(fields: [propertyId], references: [id])
+  tenant      User         @relation("Tenant", fields: [tenantId], references: [id])
+
+  @@map("rental_relationships")
+}
+
+model Message {
+  id         String   @id @default(cuid())
+  content    String
+  senderId   String
+  receiverId String
+  propertyId String
+  read       Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  property   Property @relation(fields: [propertyId], references: [id])
+  receiver   User     @relation("ReceivedMessages", fields: [receiverId], references: [id])
+  sender     User     @relation("SentMessages", fields: [senderId], references: [id])
+
+  @@map("messages")
+}
+
+model PaymentDateChangeRequest {
+  id            String              @id @default(cuid())
+  propertyId    String
+  currentDate   Int
+  proposedDate  Int
+  proposedById  String
+  respondedById String?
+  status        ChangeRequestStatus @default(PENDING)
+  reason        String?
+  responseNote  String?
+  responseDate  DateTime?
+  effectiveFrom DateTime
+  createdAt     DateTime            @default(now())
+  expiresAt     DateTime
+  updatedAt     DateTime            @updatedAt
+  property      Property            @relation(fields: [propertyId], references: [id])
+  proposedBy    User                @relation("ProposedChanges", fields: [proposedById], references: [id])
+  respondedBy   User?               @relation("RespondedChanges", fields: [respondedById], references: [id])
+
+  @@map("payment_date_change_requests")
+}
+
+model Payment {
+  id          String             @id @default(cuid())
+  amount      Int
+  dueDate     DateTime
+  paidDate    DateTime?
+  status      PaymentStatus      @default(PENDING)
+  description String?
+  method      String?
+  reference   String?
+  rentalId    String
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  proofImage  String?
+  rental      RentalRelationship @relation(fields: [rentalId], references: [id])
+
+  @@map("payments")
+}
+
+model EndRequest {
+  id            String             @id @default(cuid())
+  rentalId      String             @unique
+  requestedById String
+  requestedAt   DateTime           @default(now())
+  reason        String?
+  status        EndRequestStatus   @default(PENDING)
+  respondedAt   DateTime?
+  autoAcceptAt  DateTime
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  rental        RentalRelationship @relation(fields: [rentalId], references: [id])
+  requestedBy   User               @relation(fields: [requestedById], references: [id])
+
+  @@map("end_requests")
+}
+
+model Notification {
+  id        String           @id @default(dbgenerated("(gen_random_uuid())::text"))
+  title     String
+  message   String?
+  type      NotificationType
+  data      Json?            @default("{}")
+  read      Boolean?         @default(false)
+  userId    String
+  createdAt DateTime?        @default(now())
+  updatedAt DateTime?        @default(now())
+  body      String           @default("")
+  sentAt    DateTime?
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt], map: "idx_notifications_createdat")
+  @@index([read], map: "idx_notifications_read")
+  @@index([type], map: "idx_notifications_type")
+  @@index([userId], map: "idx_notifications_userid")
+  @@map("notifications")
+}
+
+model NotificationSettings {
+  id                        String    @id @default(dbgenerated("(gen_random_uuid())::text"))
+  paymentReminders          Boolean?  @default(true)
+  userId                    String    @unique
+  createdAt                 DateTime? @default(now())
+  updatedAt                 DateTime? @default(now()) @updatedAt
+  paymentUpdates            Boolean?  @default(true)
+  messages                  Boolean?  @default(true)
+  endRentalNotifications    Boolean?  @default(true)
+  tenantUpdates             Boolean?  @default(true)
+  paymentDateChangeRequests Boolean?  @default(true)
+  reminderDaysBefore        Int?      @default(3)
+  user                      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notification_settings")
+}
+
+enum UserType {
+  LANDLORD
+  TENANT
+}
+
+enum RentalStatus {
+  PENDING
+  ACTIVE
+  EXPIRED
+  TERMINATED
+  ENDING
+  ENDED
+}
+
+enum ContractType {
+  FIXED       // Non-renewable fixed term
+  RENEWABLE   // Can be renewed
+  MONTH_TO_MONTH
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  OVERDUE
+  CANCELLED
+  VERIFICATION
+}
+
+enum ChangeRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  EXPIRED
+
+  @@map("change_request_status")
+}
+
+enum EndRequestStatus {
+  PENDING
+  ACCEPTED
+  AUTO_ACCEPTED
+  CANCELLED
+
+  @@map("end_request_status")
+}
+
+enum NotificationType {
+  PAYMENT_REMINDER
+  PAYMENT_OVERDUE
+  PAYMENT_APPROVED
+  PAYMENT_REJECTED
+  PAYMENT_VERIFICATION_NEEDED
+  PAYMENT_DATE_CHANGE_REQUEST
+  PAYMENT_DATE_CHANGE_APPROVED
+  PAYMENT_DATE_CHANGE_REJECTED
+  NEW_MESSAGE
+  END_RENTAL_REQUEST
+  END_RENTAL_AUTO_ACCEPT_WARNING
+  NEW_TENANT_JOINED
+  INVITE_CODE_GENERATED
+  NEW_PROPERTY_IN_ZONE
+
+  @@map("notification_type")
+}
+
+enum PropertyType {
+  APARTMENT
+  VILLA
+  STUDIO
+  TOWNHOUSE
+  PENTHOUSE
+
+  @@map("property_type")
+}
+
+enum FurnishingStatus {
+  FURNISHED
+  SEMI_FURNISHED
+  UNFURNISHED
+
+  @@map("furnishing_status")
+}
+
+model IssueReport {
+  id          String        @id @default(cuid())
+  title       String
+  description String
+  category    IssueCategory
+  priority    IssuePriority @default(MEDIUM)
+  status      IssueStatus   @default(REPORTED)
+  photos      String[]      @default([])
+  tenantId    String
+  landlordId  String
+  propertyId  String
+  rentalId    String
+  reportedAt  DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  resolvedAt  DateTime?
+  tenant      User          @relation("TenantIssues", fields: [tenantId], references: [id])
+  landlord    User          @relation("LandlordIssues", fields: [landlordId], references: [id])
+  property    Property      @relation(fields: [propertyId], references: [id])
+  rental      RentalRelationship @relation(fields: [rentalId], references: [id])
+
+  @@map("issue_reports")
+}
+
+enum IssueCategory {
+  PLUMBING
+  ELECTRICAL
+  HVAC
+  STRUCTURAL
+  APPLIANCE
+  OTHER
+
+  @@map("issue_category")
+}
+
+enum IssuePriority {
+  LOW
+  MEDIUM
+  HIGH
+  EMERGENCY
+
+  @@map("issue_priority")
+}
+
+enum IssueStatus {
+  REPORTED
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+
+  @@map("issue_status")
+}
+
+
+model PropertyView {
+  id         String   @id @default(cuid())
+  userId     String
+  propertyId String
+  viewedAt   DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id])
+  property   Property @relation(fields: [propertyId], references: [id])
+
+  @@unique([userId, propertyId], name: "user_property_view")
+  @@map("property_views")
+}
+
+model PaymentTransaction {
+  id                    String   @id @default(cuid())
+  userId                String
+  amount                Float    // Amount in AED
+  currency              String   @default("AED")
+  type                  String   // INVITE_CODE_GENERATION, INVITE_CODE_USAGE
+  status                String   // PENDING, COMPLETED, FAILED
+  stripePaymentIntentId String?  @unique
+  propertyId            String?
+  metadata              Json?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  user                  User     @relation(fields: [userId], references: [id])
+  property              Property? @relation(fields: [propertyId], references: [id])
+
+  @@map("payment_transactions")
+}
+
+model PricingPlan {
+  id          String   @id @default(cuid())
+  actionType  String   @unique // e.g., "VIEW_PROPERTY_DETAILS", "CHAT_WITH_OWNER", "VIEW_CONTACT_DETAILS"
+  name        String   // e.g., "Premium Property Details", "Chat with Owner"
+  description String?  // e.g., "Access all property details and amenities"
+  cost        Int      // Cost in credits
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("pricing_plans")
+}
+
+model PremiumAction {
+  id          String   @id @default(cuid())
+  userId      String
+  propertyId  String
+  actionType  String   // 'CHAT_WITH_OWNER' or 'VIEW_CONTACT_DETAILS'
+  performedAt DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id])
+  property    Property @relation(fields: [propertyId], references: [id])
+
+  @@unique([userId, propertyId, actionType], name: "user_property_action")
+  @@map("premium_actions")
+}
+
+model Invite {
+  id          String    @id @default(cuid())
+  code        String    @unique
+  propertyId  String
+  createdById String
+  usedById    String?
+  usedAt      DateTime?
+  createdAt   DateTime  @default(now())
+  expiresAt   DateTime
+  property    Property  @relation(fields: [propertyId], references: [id])
+  createdBy   User      @relation("CreatedInvites", fields: [createdById], references: [id])
+  usedBy      User?     @relation("UsedInvites", fields: [usedById], references: [id])
+
+  @@map("invites")
+}
+
+model ZoneNotificationPreference {
+  id         String   @id @default(cuid())
+  userId     String
+  zoneName   String   
+  isEnabled  Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, zoneName])
+  @@map("zone_notification_preferences")
+}

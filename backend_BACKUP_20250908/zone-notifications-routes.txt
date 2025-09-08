@@ -1,0 +1,20 @@
+// Temporary zone notification routes (until database migration completes) - NO AUTH FOR TESTING
+router.get('/zone-notifications/preferences/:zoneName', (req: any, res) => {
+  console.log('🧪 Zone notification check for zone:', req.params.zoneName);
+  console.log('🌐 Request from IP:', req.ip || req.connection.remoteAddress);
+  console.log('🔍 User-Agent:', req.headers['user-agent']);
+  res.json({ isEnabled: false, exists: false, message: 'Temporarily disabled during database migration - NO AUTH' });
+});
+
+router.post('/zone-notifications/preferences', (req: any, res) => {
+  console.log('🧪 Zone notification preference update:', req.body);
+  console.log('🌐 Request from IP:', req.ip || req.connection.remoteAddress);
+  console.log('🔍 User-Agent:', req.headers['user-agent']);
+  const { zoneName, isEnabled } = req.body;
+  res.json({ 
+    success: true, 
+    message: isEnabled 
+      ? `Notifications enabled for ${zoneName} (temp mode - NO AUTH)` 
+      : `Notifications disabled for ${zoneName} (temp mode - NO AUTH)` 
+  });
+});
