@@ -194,17 +194,18 @@ export class ZoneDigestService {
       : `${propertyCount} new properties now available in ${zoneName}`;
 
     try {
-      await NotificationService.sendPushNotification({
-        to: user.userPushToken,
+      await NotificationService.createAndSendNotification(
+        user.userId,
+        'NEW_MESSAGE', // Using existing type for now
         title,
         body,
-        data: {
+        {
           type: 'zone_digest',
           zoneName,
           propertyCount: propertyCount.toString(),
-          userId: user.userId
+          properties: properties.map(p => ({ id: p.id, title: p.title, price: p.price }))
         }
-      });
+      );
 
       console.log(`📱 Sent notification to ${user.userName} for ${zoneName}: ${propertyCount} properties`);
     } catch (error) {

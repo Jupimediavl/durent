@@ -18,9 +18,6 @@ export function startZoneDigestCron() {
     } catch (error) {
       console.error('❌ Zone digest cron job failed:', error);
     }
-  }, {
-    scheduled: true,
-    timezone: "UTC"
   });
 
   console.log('✅ Zone digest cron job initialized');
