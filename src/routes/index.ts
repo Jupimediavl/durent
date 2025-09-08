@@ -112,11 +112,15 @@ router.put('/zone-notifications/settings', authenticate, updateUserNotificationS
 router.post('/zone-notifications/trigger-digest', async (req: any, res: any) => {
   try {
     console.log('🧪 Manual zone digest trigger requested');
+    console.log('🔧 About to call triggerZoneDigestManually function');
     await triggerZoneDigestManually();
+    console.log('✅ triggerZoneDigestManually completed successfully');
     res.json({ success: true, message: 'Zone digest triggered successfully' });
   } catch (error) {
     console.error('❌ Manual zone digest trigger failed:', error);
-    res.status(500).json({ error: 'Failed to trigger zone digest' });
+    console.error('❌ Error details:', error.message);
+    console.error('❌ Error stack:', error.stack);
+    res.status(500).json({ error: 'Failed to trigger zone digest', details: error.message });
   }
 });
 
