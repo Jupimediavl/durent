@@ -75,19 +75,23 @@ export const sendMessage = async (req: AuthRequest, res: Response) => {
       where: { id: propertyId }
     });
 
-    // Commented out: We don't want message notifications to appear in the notification bell
-    // Messages already show in the MESSAGES card with unread count
-    /*
+    // Send push notification to receiver (but not in-app notification)
     if (receiver && property) {
-      await NotificationService.sendNewMessageNotification(
+      // Only send push notification, not in-app notification
+      // Messages are already visible in the MESSAGES card
+      await NotificationService.createAndSendNotification(
         receiverId,
-        message.sender.name,
-        content,
-        property.title,
-        propertyId
+        'NEW_MESSAGE',
+        `New message from ${message.sender.name}`,
+        content.substring(0, 100), // Limit message preview to 100 chars
+        {
+          propertyId,
+          propertyTitle: property.title,
+          senderId,
+          senderName: message.sender.name
+        }
       );
     }
-    */
 
     res.status(201).json({ message });
   } catch (error) {
