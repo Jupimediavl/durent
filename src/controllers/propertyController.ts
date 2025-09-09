@@ -305,12 +305,14 @@ export const updatePaymentSettings = async (req: AuthRequest, res: Response) => 
 };
 
 export const getProperties = async (req: AuthRequest, res: Response) => {
+  const startTime = Date.now();
   console.log('🏠 Getting properties for user:', req.userId);
   try {
+    const userLookupStart = Date.now();
     const user = await prisma.user.findUnique({
       where: { id: req.userId! }
     });
-    console.log('👤 User found:', user ? `${user.name} (${user.userType})` : 'null');
+    console.log('👤 User found:', user ? `${user.name} (${user.userType})` : 'null', `(${Date.now() - userLookupStart}ms)`);
 
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
@@ -319,6 +321,7 @@ export const getProperties = async (req: AuthRequest, res: Response) => {
     let properties;
     if (user.userType === 'LANDLORD') {
       console.log('🏠 Fetching properties for landlord...');
+      const propertiesQueryStart = Date.now();
       properties = await prisma.property.findMany({
         where: { ownerId: req.userId! },
         include: {
@@ -355,7 +358,9 @@ export const getProperties = async (req: AuthRequest, res: Response) => {
           }
         }
       });
+      console.log('⚡ Properties query completed:', `${Date.now() - propertiesQueryStart}ms`);
     } else {
+      const propertiesQueryStart = Date.now();
       const rentals = await prisma.rentalRelationship.findMany({
         where: { 
           tenantId: req.userId!,
@@ -402,6 +407,7 @@ export const getProperties = async (req: AuthRequest, res: Response) => {
           }
         }
       });
+      console.log('⚡ Rentals query completed:', `${Date.now() - propertiesQueryStart}ms`);
       properties = rentals.map(rental => ({
         ...rental.property,
         rentalStatus: rental.status,
@@ -410,7 +416,7 @@ export const getProperties = async (req: AuthRequest, res: Response) => {
       }));
     }
 
-    console.log('✅ Returning properties:', properties?.length || 0, 'properties found');
+    console.log('✅ Returning properties:', properties?.length || 0, 'properties found', `(Total: ${Date.now() - startTime}ms)`);
     res.json({ properties });
   } catch (error) {
     console.error('Get properties error:', error);
