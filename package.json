@@ -23,6 +23,7 @@
     "@types/stripe": "^8.0.416",
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
+    "date-fns": "^4.1.0",
     "dotenv": "^17.2.1",
     "expo-image-picker": "~16.1.4",
     "expo-server-sdk": "^4.0.0",

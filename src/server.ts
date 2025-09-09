@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import dotenv from 'dotenv';
 import routes from './routes';
 import { startZoneDigestCron } from './scripts/zoneDigestCron';
+import { startPaymentRemindersCron } from './scripts/paymentRemindersCron';
 
 dotenv.config();
 
@@ -49,8 +50,9 @@ const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`📱 Mobile access: http://192.168.1.135:${PORT}/health`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV}`);
   
-  // Start zone digest cron job
+  // Start cron jobs
   startZoneDigestCron();
+  startPaymentRemindersCron();
 });
 
 // Graceful shutdown for Railway

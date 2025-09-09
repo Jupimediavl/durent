@@ -10,6 +10,7 @@ import { upload, uploadPropertyPhotos } from '../controllers/uploadController';
 import { createIssueReport, getTenantIssues, getLandlordIssues, updateIssueStatus, getIssueDetails, getLandlordIssuesCount, getTenantIssuesCount } from '../controllers/issueController';
 import { getUserNotificationZones, toggleZoneNotification, checkZoneNotificationStatus, getUserNotificationSettings, updateUserNotificationSettings } from '../controllers/zoneNotificationController';
 import { triggerZoneDigestManually } from '../scripts/zoneDigestCron';
+import { triggerPaymentRemindersManually } from '../scripts/paymentRemindersCron';
 import { authenticate } from '../middleware/auth';
 import endRentalRoutes from './endRentalRoutes';
 import notificationRoutes from './notificationRoutes';
@@ -143,6 +144,19 @@ router.post('/zone-notifications/emergency-trigger', async (req: any, res: any) 
   } catch (error: any) {
     console.error('❌ Emergency trigger failed:', error);
     res.status(500).json({ error: 'Emergency trigger failed', details: error.message });
+  }
+});
+
+// Manual trigger for payment reminders (testing purposes)
+router.post('/payment-reminders/trigger-manual', async (req: any, res: any) => {
+  try {
+    console.log('💰 Manual payment reminders trigger requested');
+    await triggerPaymentRemindersManually();
+    console.log('✅ Payment reminders completed successfully');
+    res.json({ success: true, message: 'Payment reminders triggered successfully' });
+  } catch (error: any) {
+    console.error('❌ Manual payment reminders trigger failed:', error);
+    res.status(500).json({ error: 'Failed to trigger payment reminders', details: error.message });
   }
 });
 
