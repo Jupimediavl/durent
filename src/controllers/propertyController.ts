@@ -323,7 +323,11 @@ export const getProperties = async (req: AuthRequest, res: Response) => {
         where: { ownerId: req.userId! },
         include: {
           rentals: {
-            include: {
+            select: {
+              id: true,
+              status: true,
+              startDate: true,
+              endDate: true,
               tenant: {
                 select: {
                   id: true,
@@ -336,7 +340,9 @@ export const getProperties = async (req: AuthRequest, res: Response) => {
                 where: {
                   status: 'PENDING'
                 },
-                include: {
+                select: {
+                  id: true,
+                  status: true,
                   requestedBy: {
                     select: {
                       id: true,
@@ -355,9 +361,20 @@ export const getProperties = async (req: AuthRequest, res: Response) => {
           tenantId: req.userId!,
           status: { in: ['ACTIVE', 'ENDING'] }
         },
-        include: {
+        select: {
+          id: true,
+          status: true,
           property: {
-            include: {
+            select: {
+              id: true,
+              title: true,
+              address: true,
+              monthlyRent: true,
+              bedrooms: true,
+              bathrooms: true,
+              area: true,
+              propertyType: true,
+              photos: true,
               owner: {
                 select: {
                   id: true,
@@ -372,7 +389,9 @@ export const getProperties = async (req: AuthRequest, res: Response) => {
             where: {
               status: 'PENDING'
             },
-            include: {
+            select: {
+              id: true,
+              status: true,
               requestedBy: {
                 select: {
                   id: true,

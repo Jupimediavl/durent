@@ -166,8 +166,15 @@ export const getUpcomingPayments = async (req: AuthRequest, res: Response) => {
       },
       include: {
         rental: {
-          include: {
-            property: true
+          select: {
+            id: true,
+            property: {
+              select: {
+                id: true,
+                title: true,
+                address: true
+              }
+            }
           }
         }
       },
