@@ -174,7 +174,7 @@ export const getUpcomingPayments = async (req: AuthRequest, res: Response) => {
       orderBy: { dueDate: 'asc' }
     });
 
-    res.json({ upcomingPayments });
+    res.json({ payments: upcomingPayments });
   } catch (error) {
     console.error('Get upcoming payments error:', error);
     res.status(500).json({ error: 'Failed to get upcoming payments' });
