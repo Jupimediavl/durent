@@ -9,6 +9,7 @@ import { proposePaymentDateChange, getPendingChangeRequests, respondToChangeRequ
 import { upload, uploadPropertyPhotos } from '../controllers/uploadController';
 import { createIssueReport, getTenantIssues, getLandlordIssues, updateIssueStatus, getIssueDetails, getLandlordIssuesCount, getTenantIssuesCount } from '../controllers/issueController';
 import { getUserNotificationZones, toggleZoneNotification, checkZoneNotificationStatus, getUserNotificationSettings, updateUserNotificationSettings } from '../controllers/zoneNotificationController';
+import { setupContract, getContract, checkExpiringContracts, extendContract } from '../controllers/contractController';
 import { triggerZoneDigestManually } from '../scripts/zoneDigestCron';
 import { triggerPaymentRemindersManually } from '../scripts/paymentRemindersCron';
 import { authenticate } from '../middleware/auth';
@@ -179,5 +180,11 @@ router.get('/debug/user', authenticate, async (req: any, res) => {
   
   res.json({ user, userId: req.userId });
 });
+
+// Contract routes
+router.post('/contracts/setup', authenticate, setupContract);
+router.get('/contracts/:rentalId', authenticate, getContract);
+router.post('/contracts/:rentalId/extend', authenticate, extendContract);
+router.get('/contracts/check/expiring', checkExpiringContracts);
 
 export default router;

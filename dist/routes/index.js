@@ -47,6 +47,7 @@ const paymentDateChangeController_1 = require("../controllers/paymentDateChangeC
 const uploadController_1 = require("../controllers/uploadController");
 const issueController_1 = require("../controllers/issueController");
 const zoneNotificationController_1 = require("../controllers/zoneNotificationController");
+const contractController_1 = require("../controllers/contractController");
 const zoneDigestCron_1 = require("../scripts/zoneDigestCron");
 const paymentRemindersCron_1 = require("../scripts/paymentRemindersCron");
 const auth_1 = require("../middleware/auth");
@@ -195,5 +196,10 @@ router.get('/debug/user', auth_1.authenticate, async (req, res) => {
     });
     res.json({ user, userId: req.userId });
 });
+// Contract routes
+router.post('/contracts/setup', auth_1.authenticate, contractController_1.setupContract);
+router.get('/contracts/:rentalId', auth_1.authenticate, contractController_1.getContract);
+router.post('/contracts/:rentalId/extend', auth_1.authenticate, contractController_1.extendContract);
+router.get('/contracts/check/expiring', contractController_1.checkExpiringContracts);
 exports.default = router;
 //# sourceMappingURL=index.js.map
