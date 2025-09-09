@@ -1,0 +1,18 @@
+import { Request, Response } from 'express';
+import { AuthRequest } from '../middleware/auth';
+export declare const createPayment: (req: AuthRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const getPayments: (req: AuthRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const markPaymentAsPaid: (req: AuthRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const getPaymentHistory: (req: AuthRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const getUpcomingPayments: (req: AuthRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const verifyPayment: (req: AuthRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const getPaymentsForVerification: (req: AuthRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const markPaymentNotReceived: (req: AuthRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const deletePayment: (req: AuthRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const generatePaymentForProperty: (req: AuthRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const createInvitePaymentIntent: (req: AuthRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const createJoinPaymentIntent: (req: AuthRequest, res: Response) => Promise<void>;
+export declare const confirmPaymentAndExecute: (req: AuthRequest, res: Response) => Promise<void>;
+export declare const handleStripeWebhook: (req: Request, res: Response) => Promise<void>;
+export declare const getPaymentConfig: (req: Request, res: Response) => Promise<void>;
+//# sourceMappingURL=paymentController_broken.d.ts.map

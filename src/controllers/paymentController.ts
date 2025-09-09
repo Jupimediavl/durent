@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { PrismaClient, PaymentStatus, RentalStatus } from '@prisma/client';
 import { AuthRequest } from '../middleware/auth';
 import { stripeService } from '../services/stripeService';
+import { NotificationService } from '../services/notificationService';
 
 const prisma = new PrismaClient();
 
@@ -72,12 +73,19 @@ export const getPayments = async (req: AuthRequest, res: Response) => {
 export const markPaymentAsPaid = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
+    const { method, reference, proofImage } = req.body;
     const userId = req.userId!;
 
     const payment = await prisma.payment.findUnique({
       where: { id },
       include: {
-        rental: true
+        rental: {
+          include: {
+            property: true,
+            tenant: true,
+            landlord: true
+          }
+        }
       }
     });
 
@@ -85,23 +93,54 @@ export const markPaymentAsPaid = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ error: 'Payment not found' });
     }
 
-    // Only landlord can mark payment as paid
-    if (payment.rental.landlordId !== userId) {
-      return res.status(403).json({ error: 'Only landlord can mark payment as paid' });
+    // Verify access (tenant can mark their own payments, landlord can mark payments for their properties)
+    const hasAccess = payment.rental.tenantId === userId || payment.rental.landlordId === userId;
+    
+    if (!hasAccess) {
+      return res.status(403).json({ error: 'Access denied' });
     }
 
     const updatedPayment = await prisma.payment.update({
       where: { id },
       data: {
-        status: 'PAID',
-        paidDate: new Date()
+        status: 'VERIFICATION',
+        paidDate: new Date(),
+        method: method || 'Not specified',
+        reference,
+        proofImage
+      },
+      include: {
+        rental: {
+          include: {
+            property: true,
+            tenant: true,
+            landlord: true
+          }
+        }
       }
     });
+
+    // Send push notification to landlord when tenant uploads payment proof
+    if (userId === payment.rental.tenantId) {
+      await NotificationService.createAndSendNotification(
+        payment.rental.landlordId,
+        'PAYMENT_VERIFICATION_NEEDED',
+        'Payment Verification Needed',
+        `${payment.rental.tenant.name} submitted payment proof for ${payment.rental.property.title}`,
+        {
+          paymentId: payment.id,
+          propertyId: payment.rental.propertyId,
+          propertyTitle: payment.rental.property.title,
+          tenantName: payment.rental.tenant.name,
+          amount: payment.amount
+        }
+      );
+    }
 
     res.json({ payment: updatedPayment });
   } catch (error) {
     console.error('Mark payment as paid error:', error);
-    res.status(500).json({ error: 'Failed to mark payment as paid' });
+    res.status(500).json({ error: 'Failed to update payment' });
   }
 };
 
@@ -232,7 +271,13 @@ export const verifyPayment = async (req: AuthRequest, res: Response) => {
     const payment = await prisma.payment.findUnique({
       where: { id },
       include: {
-        rental: true
+        rental: {
+          include: {
+            property: true,
+            tenant: true,
+            landlord: true
+          }
+        }
       }
     });
 
@@ -245,14 +290,63 @@ export const verifyPayment = async (req: AuthRequest, res: Response) => {
       return res.status(403).json({ error: 'Only landlord can verify payments' });
     }
 
+    if (payment.status !== 'VERIFICATION') {
+      return res.status(400).json({ error: 'Payment is not in verification status' });
+    }
+
     const newStatus = verify ? 'PAID' : 'PENDING';
     const updatedPayment = await prisma.payment.update({
       where: { id },
       data: {
         status: newStatus,
-        paidDate: verify ? new Date() : null
+        // Reset payment data if rejected
+        ...(verify ? {} : {
+          paidDate: null,
+          method: null,
+          reference: null,
+          proofImage: null
+        })
+      },
+      include: {
+        rental: {
+          include: {
+            property: true,
+            tenant: true,
+            landlord: true
+          }
+        }
       }
     });
+
+    // Send push notifications to tenant
+    if (verify) {
+      await NotificationService.createAndSendNotification(
+        payment.rental.tenantId,
+        'PAYMENT_APPROVED',
+        'Payment Approved',
+        `Your payment of AED ${payment.amount} for ${payment.rental.property.title} has been approved`,
+        {
+          paymentId: payment.id,
+          propertyId: payment.rental.propertyId,
+          propertyTitle: payment.rental.property.title,
+          amount: payment.amount
+        }
+      );
+    } else {
+      await NotificationService.createAndSendNotification(
+        payment.rental.tenantId,
+        'PAYMENT_REJECTED',
+        'Payment Rejected',
+        `Your payment of AED ${payment.amount} for ${payment.rental.property.title} was rejected. Please resubmit.`,
+        {
+          paymentId: payment.id,
+          propertyId: payment.rental.propertyId,
+          propertyTitle: payment.rental.property.title,
+          amount: payment.amount,
+          reason: 'Please resubmit with correct payment proof'
+        }
+      );
+    }
 
     res.json({ payment: updatedPayment });
   } catch (error) {
