@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { register, login } from '../controllers/authController';
+import { register, login, verifyEmail, resendVerificationEmail } from '../controllers/authController';
 import { createProperty, generateInvite, acceptInvite, validateInvite, getProperties, updatePaymentSettings, updateProperty, searchAvailableProperties, updatePropertyAvailability, deleteProperty } from '../controllers/propertyController';
 import { sendMessage, getMessages, getConversations, markAsRead } from '../controllers/chatController';
 import { updatePushToken, getProfile, viewPremiumPropertyDetails, checkPropertyViewStatus, updateProfile, updatePassword } from '../controllers/userController';
@@ -22,6 +22,8 @@ const router = Router();
 
 router.post('/auth/register', register);
 router.post('/auth/login', login);
+router.get('/auth/verify-email/:token', verifyEmail);
+router.post('/auth/resend-verification', resendVerificationEmail);
 
 router.post('/properties', authenticate, createProperty);
 router.get('/properties', authenticate, getProperties);

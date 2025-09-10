@@ -72,7 +72,6 @@ export const getLandlordIssues = async (req: Request, res: Response) => {
           select: {
             name: true,
             email: true,
-            phone: true
           }
         }
       },
@@ -227,14 +226,12 @@ export const getIssueDetails = async (req: Request, res: Response) => {
           select: {
             name: true,
             email: true,
-            phone: true
           }
         },
         landlord: {
           select: {
             name: true,
             email: true,
-            phone: true
           }
         }
       }

@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { PrismaClient, UserType } from '@prisma/client';
+import { emailService } from '../services/emailService';
 
 const prisma = new PrismaClient();
 
@@ -11,10 +12,10 @@ const generateToken = (userId: string): string => {
 
 export const register = async (req: Request, res: Response) => {
   try {
-    const { email, password, name, phone, userType } = req.body;
+    const { email, password, name, userType } = req.body;
 
-    if (!email || !password || !name || !phone || !userType) {
-      return res.status(400).json({ error: 'Missing required fields: email, password, name, phone, and userType are required' });
+    if (!email || !password || !name || !userType) {
+      return res.status(400).json({ error: 'Missing required fields: email, password, name, and userType are required' });
     }
 
     if (name.length > 20) {
@@ -36,11 +37,6 @@ export const register = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Password must be at least 6 characters' });
     }
 
-    // Basic phone number validation (should start with + and contain only digits and +)
-    const phoneRegex = /^\+\d{7,15}$/;
-    if (!phoneRegex.test(phone)) {
-      return res.status(400).json({ error: 'Invalid phone number format. Please include country code (e.g., +971501234567)' });
-    }
 
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
@@ -54,25 +50,26 @@ export const register = async (req: Request, res: Response) => {
         email,
         password: hashedPassword,
         name,
-        phone,
         userType,
+        emailVerified: false,
       },
       select: {
         id: true,
         email: true,
         name: true,
-        phone: true,
         userType: true,
+        emailVerified: true,
         createdAt: true,
       },
     });
 
-    const token = generateToken(user.id);
+    // Send verification email
+    await emailService.sendVerificationEmail(user.email, user.name, user.id);
 
     res.status(201).json({
-      message: 'User registered successfully',
+      message: 'Account created successfully! Please check your email to verify your account before logging in.',
       user,
-      token,
+      // Don't send token until email is verified
     });
   } catch (error) {
     console.error('Registration error:', error);
@@ -93,13 +90,22 @@ export const login = async (req: Request, res: Response) => {
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
       console.log('User not found:', email);
-      return res.status(401).json({ error: 'Invalid credentials' });
+      return res.status(401).json({ error: 'Invalid email or password' });
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       console.log('Invalid password for user:', email);
-      return res.status(401).json({ error: 'Invalid credentials' });
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+
+    // Check if email is verified
+    if (!user.emailVerified) {
+      console.log('Email not verified for user:', email);
+      return res.status(403).json({ 
+        error: 'Please verify your email first. Check your inbox for verification link.',
+        code: 'EMAIL_NOT_VERIFIED'
+      });
     }
 
     const token = generateToken(user.id);
@@ -114,6 +120,57 @@ export const login = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Login error details:', error);
     console.error('Request body:', req.body);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const verifyEmail = async (req: Request, res: Response) => {
+  try {
+    const { token } = req.params;
+
+    if (!token) {
+      return res.status(400).json({ error: 'Verification token is required' });
+    }
+
+    const result = await emailService.verifyEmailToken(token);
+
+    if (!result.success) {
+      return res.status(400).json({ error: result.error });
+    }
+
+    // Redirect to success page or return success
+    res.json({
+      message: 'Email verified successfully! You can now log in to your account.',
+      success: true
+    });
+
+  } catch (error) {
+    console.error('Email verification error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const resendVerificationEmail = async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    const sent = await emailService.resendVerificationEmail(email);
+
+    if (!sent) {
+      return res.status(400).json({ error: 'Unable to send verification email. Please check if the email is correct and not already verified.' });
+    }
+
+    res.json({
+      message: 'Verification email sent successfully. Please check your inbox.',
+      success: true
+    });
+
+  } catch (error) {
+    console.error('Resend verification error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };

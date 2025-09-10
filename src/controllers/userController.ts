@@ -32,7 +32,6 @@ export const getProfile = async (req: AuthRequest, res: Response) => {
         id: true,
         email: true,
         name: true,
-        phone: true,
         userType: true,
         createdAt: true,
       }
@@ -107,11 +106,11 @@ export const checkPropertyViewStatus = async (req: AuthRequest, res: Response) =
 
 export const updateProfile = async (req: AuthRequest, res: Response) => {
   try {
-    const { name, phone } = req.body;
+    const { name } = req.body;
     const userId = req.userId!;
 
-    if (!name || !phone) {
-      return res.status(400).json({ error: 'Name and phone are required' });
+    if (!name) {
+      return res.status(400).json({ error: 'Name is required' });
     }
 
     if (name.length > 20) {
@@ -122,20 +121,13 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: 'Name must be at least 2 characters' });
     }
 
-    // Basic phone number validation
-    const phoneRegex = /^\+\d{7,15}$/;
-    if (!phoneRegex.test(phone)) {
-      return res.status(400).json({ error: 'Invalid phone number format. Please include country code (e.g., +971501234567)' });
-    }
-
     const updatedUser = await prisma.user.update({
       where: { id: userId },
-      data: { name, phone },
+      data: { name },
       select: {
         id: true,
         email: true,
         name: true,
-        phone: true,
         userType: true,
         createdAt: true,
       }
