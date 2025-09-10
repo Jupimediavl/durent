@@ -331,6 +331,9 @@ export const getProperties = async (req: AuthRequest, res: Response) => {
               status: true,
               startDate: true,
               endDate: true,
+              contractStartDate: true,
+              contractEndDate: true,
+              contractDuration: true,
               tenant: {
                 select: {
                   id: true,

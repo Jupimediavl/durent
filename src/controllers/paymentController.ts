@@ -149,7 +149,11 @@ export const getUpcomingPayments = async (req: AuthRequest, res: Response) => {
     const userId = req.userId!;
     const now = new Date();
     const thirtyDaysFromNow = new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000));
+    
+    console.log('💰 [UPCOMING PAYMENTS] Request from user:', userId);
+    console.log('💰 [UPCOMING PAYMENTS] Date range: up to', thirtyDaysFromNow.toISOString());
 
+    // For upcoming payments, include both future payments and overdue payments for tenants
     const upcomingPayments = await prisma.payment.findMany({
       where: {
         rental: {
@@ -160,8 +164,7 @@ export const getUpcomingPayments = async (req: AuthRequest, res: Response) => {
         },
         status: 'PENDING',
         dueDate: {
-          gte: now,
-          lte: thirtyDaysFromNow
+          lte: thirtyDaysFromNow // Remove the gte: now to include overdue payments
         }
       },
       include: {
@@ -180,6 +183,14 @@ export const getUpcomingPayments = async (req: AuthRequest, res: Response) => {
       },
       orderBy: { dueDate: 'asc' }
     });
+    
+    console.log('💰 [UPCOMING PAYMENTS] Found payments:', upcomingPayments.length);
+    console.log('💰 [UPCOMING PAYMENTS] Payment details:', upcomingPayments.map(p => ({ 
+      id: p.id, 
+      status: p.status, 
+      dueDate: p.dueDate, 
+      amount: p.amount 
+    })));
 
     res.json({ payments: upcomingPayments });
   } catch (error) {
@@ -191,6 +202,8 @@ export const getUpcomingPayments = async (req: AuthRequest, res: Response) => {
 export const getPaymentHistory = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.userId!;
+    
+    console.log('📊 [PAYMENT HISTORY] Request from user:', userId);
 
     const paymentHistory = await prisma.payment.findMany({
       where: {
@@ -207,14 +220,19 @@ export const getPaymentHistory = async (req: AuthRequest, res: Response) => {
       include: {
         rental: {
           include: {
-            property: true
+            property: true,
+            tenant: true,
+            landlord: true
           }
         }
       },
-      orderBy: { paidDate: 'desc' }
+      orderBy: { dueDate: 'desc' }
     });
+    
+    console.log('📊 [PAYMENT HISTORY] Found payments:', paymentHistory.length);
+    console.log('📊 [PAYMENT HISTORY] Payment statuses:', paymentHistory.map(p => ({ id: p.id, status: p.status, dueDate: p.dueDate })));
 
-    res.json({ paymentHistory });
+    res.json({ payments: paymentHistory });
   } catch (error) {
     console.error('Get payment history error:', error);
     res.status(500).json({ error: 'Failed to get payment history' });
@@ -272,11 +290,11 @@ export const generatePaymentForProperty = async (req: AuthRequest, res: Response
 export const verifyPayment = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const { verify } = req.body;
+    const { approved } = req.body;
     const userId = req.userId!;
     
-    console.log('💰 [PAYMENT VERIFY] Request:', { id, verify, userId });
-    console.log('💰 [PAYMENT VERIFY] Action:', verify ? 'APPROVING' : 'REJECTING');
+    console.log('💰 [PAYMENT VERIFY] Request:', { id, approved, userId });
+    console.log('💰 [PAYMENT VERIFY] Action:', approved ? 'APPROVING' : 'REJECTING');
 
     const payment = await prisma.payment.findUnique({
       where: { id },
@@ -304,13 +322,13 @@ export const verifyPayment = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: 'Payment is not in verification status' });
     }
 
-    const newStatus = verify ? 'PAID' : 'PENDING';
+    const newStatus = approved ? 'PAID' : 'PENDING';
     const updatedPayment = await prisma.payment.update({
       where: { id },
       data: {
         status: newStatus,
         // Reset payment data if rejected
-        ...(verify ? {} : {
+        ...(approved ? {} : {
           paidDate: null,
           method: null,
           reference: null,
@@ -329,7 +347,7 @@ export const verifyPayment = async (req: AuthRequest, res: Response) => {
     });
 
     // Send push notifications to tenant
-    if (verify) {
+    if (approved) {
       console.log('📩 [PAYMENT VERIFY] Sending APPROVAL notification to tenant:', payment.rental.tenantId);
       await NotificationService.createAndSendNotification(
         payment.rental.tenantId,
