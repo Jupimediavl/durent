@@ -250,8 +250,22 @@ export const acceptInvite = async (req: AuthRequest, res: Response) => {
         tenantId: req.userId!,
         status: 'ACTIVE',
       },
-      include: { property: true },
+      include: { 
+        property: true,
+        tenant: true
+      },
     });
+
+    // Send notification to landlord about new tenant joining
+    if (updatedRental.tenant) {
+      const { NotificationService } = await import('../services/notificationService');
+      await NotificationService.sendNewTenantJoinedNotification(
+        updatedRental.landlordId,
+        updatedRental.tenant.firstName,
+        updatedRental.property.title,
+        updatedRental.propertyId
+      );
+    }
 
     res.json({
       message: 'Successfully connected to property',
