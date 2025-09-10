@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import routes from './routes';
 import { startZoneDigestCron } from './scripts/zoneDigestCron';
 import { startPaymentRemindersCron } from './scripts/paymentRemindersCron';
+import { startRentalExpiryCron } from './scripts/rentalExpiryCron';
 
 dotenv.config();
 
@@ -53,6 +54,7 @@ const server = app.listen(PORT, '0.0.0.0', () => {
   // Start cron jobs
   startZoneDigestCron();
   startPaymentRemindersCron();
+  startRentalExpiryCron();
 });
 
 // Graceful shutdown for Railway

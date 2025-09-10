@@ -94,6 +94,10 @@ export class NotificationService {
       case 'PAYMENT_DATE_CHANGE_APPROVED':
       case 'PAYMENT_DATE_CHANGE_REJECTED':
         return settings.paymentDateChangeRequests;
+      case 'RENTAL_EXPIRING_SOON':
+      case 'RENTAL_EXPIRED':
+      case 'CONTRACT_RENEWAL_REMINDER':
+        return settings.endRentalNotifications;
       default:
         return true;
     }
