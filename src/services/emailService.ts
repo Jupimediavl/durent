@@ -1,5 +1,5 @@
 import nodemailer from 'nodemailer';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
@@ -21,7 +21,7 @@ class EmailService {
   async sendVerificationEmail(userEmail: string, userName: string, userId: string): Promise<boolean> {
     try {
       // Generate verification token
-      const verificationToken = uuidv4();
+      const verificationToken = randomUUID();
       
       // Store token in database
       await prisma.user.update({
