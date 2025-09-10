@@ -261,7 +261,7 @@ export const acceptInvite = async (req: AuthRequest, res: Response) => {
       const { NotificationService } = await import('../services/notificationService');
       await NotificationService.sendNewTenantJoinedNotification(
         updatedRental.landlordId,
-        updatedRental.tenant.firstName,
+        updatedRental.tenant.name,
         updatedRental.property.title,
         updatedRental.propertyId
       );
