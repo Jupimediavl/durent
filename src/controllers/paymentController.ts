@@ -274,6 +274,9 @@ export const verifyPayment = async (req: AuthRequest, res: Response) => {
     const { id } = req.params;
     const { verify } = req.body;
     const userId = req.userId!;
+    
+    console.log('💰 [PAYMENT VERIFY] Request:', { id, verify, userId });
+    console.log('💰 [PAYMENT VERIFY] Action:', verify ? 'APPROVING' : 'REJECTING');
 
     const payment = await prisma.payment.findUnique({
       where: { id },
@@ -327,6 +330,7 @@ export const verifyPayment = async (req: AuthRequest, res: Response) => {
 
     // Send push notifications to tenant
     if (verify) {
+      console.log('📩 [PAYMENT VERIFY] Sending APPROVAL notification to tenant:', payment.rental.tenantId);
       await NotificationService.createAndSendNotification(
         payment.rental.tenantId,
         'PAYMENT_APPROVED',
@@ -339,7 +343,9 @@ export const verifyPayment = async (req: AuthRequest, res: Response) => {
           amount: payment.amount
         }
       );
+      console.log('✅ [PAYMENT VERIFY] APPROVAL notification sent');
     } else {
+      console.log('📩 [PAYMENT VERIFY] Sending REJECTION notification to tenant:', payment.rental.tenantId);
       await NotificationService.createAndSendNotification(
         payment.rental.tenantId,
         'PAYMENT_REJECTED',
@@ -353,6 +359,7 @@ export const verifyPayment = async (req: AuthRequest, res: Response) => {
           reason: 'Please resubmit with correct payment proof'
         }
       );
+      console.log('❌ [PAYMENT VERIFY] REJECTION notification sent');
     }
 
     res.json({ payment: updatedPayment });
