@@ -273,7 +273,6 @@ export const getPastRentals = async (req: AuthRequest, res: Response) => {
             id: true,
             name: true,
             email: true,
-            phone: true
           }
         },
         landlord: {
@@ -281,7 +280,6 @@ export const getPastRentals = async (req: AuthRequest, res: Response) => {
             id: true,
             name: true,
             email: true,
-            phone: true
           }
         },
         payments: {
@@ -324,7 +322,6 @@ export const getPastTenants = async (req: AuthRequest, res: Response) => {
             id: true,
             name: true,
             email: true,
-            phone: true
           }
         },
         payments: {

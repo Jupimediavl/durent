@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { PrismaClient, UserType } from '@prisma/client';
+// import { emailService } from '../services/emailService'; // Removed for simplicity
 
 const prisma = new PrismaClient();
 
@@ -11,7 +12,10 @@ const generateToken = (userId: string): string => {
 
 export const register = async (req: Request, res: Response) => {
   try {
-    const { email, password, name, phone, userType } = req.body;
+    let { email, password, name, userType } = req.body;
+    
+    // Normalize email to lowercase
+    email = email?.toLowerCase();
 
     if (!email || !password || !name || !userType) {
       return res.status(400).json({ error: 'Missing required fields: email, password, name, and userType are required' });
@@ -56,25 +60,26 @@ export const register = async (req: Request, res: Response) => {
         email,
         password: hashedPassword,
         name,
-        phone,
         userType,
       },
       select: {
         id: true,
         email: true,
         name: true,
-        phone: true,
         userType: true,
         createdAt: true,
       },
     });
 
-    const token = generateToken(user.id);
+    // Send verification email - TEMPORARILY DISABLED for testing
+    // await emailService.sendVerificationEmail(user.email, user.name, user.id);
 
+    const token = generateToken(user.id);
+    
     res.status(201).json({
-      message: 'User registered successfully',
+      message: 'Account created successfully!',
       user,
-      token,
+      token, // Send token immediately - no email verification needed
     });
   } catch (error) {
     console.error('Registration error:', error);
@@ -85,7 +90,10 @@ export const register = async (req: Request, res: Response) => {
 export const login = async (req: Request, res: Response) => {
   try {
     console.log('Login attempt:', { email: req.body.email, hasPassword: !!req.body.password });
-    const { email, password } = req.body;
+    let { email, password } = req.body;
+    
+    // Normalize email to lowercase
+    email = email?.toLowerCase();
 
     if (!email || !password) {
       console.log('Missing credentials');
@@ -95,14 +103,23 @@ export const login = async (req: Request, res: Response) => {
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
       console.log('User not found:', email);
-      return res.status(401).json({ error: 'Invalid credentials' });
+      return res.status(401).json({ error: 'Invalid email or password' });
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       console.log('Invalid password for user:', email);
-      return res.status(401).json({ error: 'Invalid credentials' });
+      return res.status(401).json({ error: 'Invalid email or password' });
     }
+
+    // Check if email is verified - TEMPORARILY DISABLED FOR TESTING
+    // if (!user.emailVerified) {
+    //   console.log('Email not verified for user:', email);
+    //   return res.status(403).json({ 
+    //     error: 'Please verify your email first. Check your inbox for verification link.',
+    //     code: 'EMAIL_NOT_VERIFIED'
+    //   });
+    // }
 
     const token = generateToken(user.id);
     const { password: _, ...userWithoutPassword } = user;
@@ -118,4 +135,20 @@ export const login = async (req: Request, res: Response) => {
     console.error('Request body:', req.body);
     res.status(500).json({ error: 'Internal server error' });
   }
+};
+
+export const verifyEmail = async (req: Request, res: Response) => {
+  // Email verification disabled - users don't need to verify emails
+  res.json({
+    message: 'Email verification is not required.',
+    success: true
+  });
+};
+
+export const resendVerificationEmail = async (req: Request, res: Response) => {
+  // Email verification disabled - no need to resend
+  res.json({
+    message: 'Email verification is not required.',
+    success: true
+  });
 };

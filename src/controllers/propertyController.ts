@@ -352,8 +352,7 @@ export const getProperties = async (req: AuthRequest, res: Response) => {
                 select: {
                   id: true,
                   name: true,
-                  email: true,
-                  phone: true
+                  email: true
                 }
               },
               endRequest: {
@@ -401,8 +400,7 @@ export const getProperties = async (req: AuthRequest, res: Response) => {
                 select: {
                   id: true,
                   name: true,
-                  email: true,
-                  phone: true
+                  email: true
                 }
               }
             }
@@ -591,7 +589,6 @@ export const updateProperty = async (req: AuthRequest, res: Response) => {
                 id: true,
                 name: true,
                 email: true,
-                phone: true
               }
             }
           }
@@ -656,7 +653,6 @@ export const searchAvailableProperties = async (req: AuthRequest, res: Response)
           select: {
             id: true,
             name: true,
-            phone: true,
             email: true
           }
         },

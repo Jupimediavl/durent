@@ -22,6 +22,9 @@ const router = Router();
 
 router.post('/auth/register', register);
 router.post('/auth/login', login);
+// Email verification routes - temporarily disabled
+// router.get('/auth/verify-email/:token', verifyEmail);
+// router.post('/auth/resend-verification', resendVerificationEmail);
 
 router.post('/properties', authenticate, createProperty);
 router.get('/properties', authenticate, getProperties);

@@ -32,7 +32,6 @@ export const getProfile = async (req: AuthRequest, res: Response) => {
         id: true,
         email: true,
         name: true,
-        phone: true,
         userType: true,
         createdAt: true,
       }
@@ -129,7 +128,6 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
         return res.status(400).json({ error: 'Invalid phone number format. Please include country code (e.g., +971501234567)' });
       }
     }
-
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: { name, phone },
@@ -137,7 +135,6 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
         id: true,
         email: true,
         name: true,
-        phone: true,
         userType: true,
         createdAt: true,
       }
