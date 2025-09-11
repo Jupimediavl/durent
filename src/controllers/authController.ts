@@ -12,7 +12,10 @@ const generateToken = (userId: string): string => {
 
 export const register = async (req: Request, res: Response) => {
   try {
-    const { email, password, name, userType } = req.body;
+    let { email, password, name, userType } = req.body;
+    
+    // Normalize email to lowercase
+    email = email?.toLowerCase();
 
     if (!email || !password || !name || !userType) {
       return res.status(400).json({ error: 'Missing required fields: email, password, name, and userType are required' });
@@ -80,7 +83,10 @@ export const register = async (req: Request, res: Response) => {
 export const login = async (req: Request, res: Response) => {
   try {
     console.log('Login attempt:', { email: req.body.email, hasPassword: !!req.body.password });
-    const { email, password } = req.body;
+    let { email, password } = req.body;
+    
+    // Normalize email to lowercase
+    email = email?.toLowerCase();
 
     if (!email || !password) {
       console.log('Missing credentials');
