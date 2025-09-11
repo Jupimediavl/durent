@@ -12,7 +12,7 @@ const generateToken = (userId: string): string => {
 
 export const register = async (req: Request, res: Response) => {
   try {
-    let { email, password, name, userType } = req.body;
+    let { email, password, name, phone, userType } = req.body;
     
     // Normalize email to lowercase
     email = email?.toLowerCase();
