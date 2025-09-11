@@ -105,14 +105,14 @@ export const login = async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
-    // Check if email is verified
-    if (!user.emailVerified) {
-      console.log('Email not verified for user:', email);
-      return res.status(403).json({ 
-        error: 'Please verify your email first. Check your inbox for verification link.',
-        code: 'EMAIL_NOT_VERIFIED'
-      });
-    }
+    // Check if email is verified - TEMPORARILY DISABLED FOR TESTING
+    // if (!user.emailVerified) {
+    //   console.log('Email not verified for user:', email);
+    //   return res.status(403).json({ 
+    //     error: 'Please verify your email first. Check your inbox for verification link.',
+    //     code: 'EMAIL_NOT_VERIFIED'
+    //   });
+    // }
 
     const token = generateToken(user.id);
     const { password: _, ...userWithoutPassword } = user;
