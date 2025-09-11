@@ -13,8 +13,8 @@ export const register = async (req: Request, res: Response) => {
   try {
     const { email, password, name, phone, userType } = req.body;
 
-    if (!email || !password || !name || !phone || !userType) {
-      return res.status(400).json({ error: 'Missing required fields: email, password, name, phone, and userType are required' });
+    if (!email || !password || !name || !userType) {
+      return res.status(400).json({ error: 'Missing required fields: email, password, name, and userType are required' });
     }
 
     if (name.length > 20) {
@@ -36,10 +36,12 @@ export const register = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Password must be at least 6 characters' });
     }
 
-    // Basic phone number validation (should start with + and contain only digits and +)
-    const phoneRegex = /^\+\d{7,15}$/;
-    if (!phoneRegex.test(phone)) {
-      return res.status(400).json({ error: 'Invalid phone number format. Please include country code (e.g., +971501234567)' });
+    // Optional phone number validation
+    if (phone) {
+      const phoneRegex = /^\+\d{7,15}$/;
+      if (!phoneRegex.test(phone)) {
+        return res.status(400).json({ error: 'Invalid phone number format. Please include country code (e.g., +971501234567)' });
+      }
     }
 
     const existingUser = await prisma.user.findUnique({ where: { email } });
