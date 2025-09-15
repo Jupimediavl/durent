@@ -17,6 +17,7 @@
   "license": "ISC",
   "dependencies": {
     "@prisma/client": "^6.15.0",
+    "@sendgrid/mail": "^8.1.5",
     "@supabase/supabase-js": "^2.56.1",
     "@types/multer": "^2.0.0",
     "@types/node-cron": "^3.0.11",
