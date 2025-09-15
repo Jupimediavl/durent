@@ -103,11 +103,14 @@ export const register = async (req: Request, res: Response) => {
     });
 
     // Send verification email
-    const emailSent = await emailService.sendVerificationCode(user.email, verificationCode, user.name);
-    
-    if (!emailSent) {
-      console.error('Failed to send verification email to:', user.email);
-      // Don't fail registration if email fails, but log it
+    try {
+      const emailSent = await emailService.sendVerificationCode(user.email, verificationCode, user.name);
+      if (!emailSent) {
+        console.error('Failed to send verification email to:', user.email);
+      }
+    } catch (error) {
+      console.error('Email service error:', error);
+      // Don't fail registration if email fails
     }
 
     console.log(`✅ User registered: ${user.email}, verification code: ${verificationCode}`);
