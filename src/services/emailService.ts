@@ -1,12 +1,17 @@
 import nodemailer from 'nodemailer';
 
-// Configure Gmail SMTP
+// Configure Gmail SMTP with explicit settings
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false, // true for 465, false for other ports
   auth: {
     user: process.env.GMAIL_USER, // Your Gmail address
     pass: process.env.GMAIL_APP_PASSWORD, // Your Gmail App Password (not regular password)
   },
+  tls: {
+    rejectUnauthorized: false
+  }
 });
 
 interface EmailOptions {
